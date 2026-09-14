@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TOEIC 635 → 750+｜Week 1</title>
+  <link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">T</div>
+        <div>
+          <div class="brand-title">TOEIC 635 → 750+</div>
+          <div class="brand-sub">Week 1 Adaptive Training</div>
+        </div>
+      </div>
+
+      <nav id="dayNav" class="day-nav"></nav>
+
+      <div class="sidebar-actions">
+        <button id="exportBtn" class="btn secondary">匯出學習紀錄 JSON</button>
+        <button id="exportCsvBtn" class="btn secondary">匯出錯題 CSV</button>
+        <button id="resetBtn" class="btn danger ghost">重設本週紀錄</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <h1 id="pageTitle">Week 1 儀表板</h1>
+          <p id="pageSubtitle">先診斷，再決定後續配題方向。</p>
+        </div>
+        <div class="goal-pill">目標：750+</div>
+      </header>
+
+      <section id="dashboardView" class="view"></section>
+      <section id="lessonView" class="view hidden"></section>
+      <section id="reviewView" class="view hidden"></section>
+    </main>
+  </div>
+
+  <script src="data/week1.js"></script>
+  <script src="assets/app.js"></script>
+</body>
+</html>
