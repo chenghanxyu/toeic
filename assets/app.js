@@ -3,6 +3,7 @@ const DATA = window.WEEK1_DATA;
 const STORAGE_KEY = "toeic_week1_progress_v1";
 let currentDayId = null;
 let questionStartTimes = {};
+let availableVoices = [];
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -84,6 +85,73 @@ function skillLabel(k){
     reading_sequence:"閱讀：順序",reading_action:"閱讀：行動",reading_purpose:"閱讀：目的"
   };
   return map[k]||k;
+}
+
+function normalizeText(text){
+  return String(text ?? "").replace(/\\n/g, "\n");
+}
+
+function escapeHtml(s){
+  return String(s??"").replace(/[&<>"']/g,m=>({
+    "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"
+  }[m]));
+}
+
+function formatPassage(text){
+  const normalized = normalizeText(text).replace(/\r\n/g,"\n").trim();
+  if(!normalized) return "";
+
+  const lines = normalized.split("\n");
+  let i = 0;
+  const meta = [];
+  const metaRe = /^(To|From|Subject|Date):\s*(.*)$/i;
+
+  while(i < lines.length){
+    const line = lines[i].trim();
+    if(!line){
+      i++;
+      if(meta.length) break;
+      continue;
+    }
+    const match = line.match(metaRe);
+    if(!match) break;
+    meta.push({label:match[1], value:match[2]});
+    i++;
+  }
+
+  let html = "";
+  if(meta.length){
+    html += `<div class="passage-meta">${
+      meta.map(row=>`<div class="passage-meta-row">
+        <span class="passage-meta-label">${escapeHtml(row.label)}</span>
+        <span class="passage-meta-value">${escapeHtml(row.value)}</span>
+      </div>`).join("")
+    }</div>`;
+  }
+
+  while(i < lines.length && !lines[i].trim()) i++;
+
+  if(!meta.length && i < lines.length){
+    const first = lines[i].trim();
+    const isTitle = first.length <= 60 &&
+      first === first.toUpperCase() &&
+      /[A-Z]/.test(first) &&
+      (i+1 >= lines.length || !lines[i+1].trim());
+    if(isTitle){
+      html += `<div class="passage-title">${escapeHtml(first)}</div>`;
+      i++;
+      while(i < lines.length && !lines[i].trim()) i++;
+    }
+  }
+
+  const body = lines.slice(i).join("\n").trim();
+  if(body){
+    html += body.split(/\n\s*\n/).map(paragraph=>{
+      const clean = paragraph.split("\n").map(x=>x.trim()).filter(Boolean).join(" ");
+      return clean ? `<p>${escapeHtml(clean)}</p>` : "";
+    }).join("");
+  }
+  return html;
 }
 
 function renderNav(){
@@ -179,37 +247,97 @@ function showDashboard(){
   document.querySelectorAll("[data-day-card]").forEach(el=>el.onclick=()=>showLesson(el.dataset.dayCard));
 }
 
-function resolvePassage(day,q){
-  if(q.passage) return q.passage;
-  if(q.passageRef){
-    const src=day.questions.find(x=>x.id===q.passageRef);
-    return src?.passage || "";
-  }
-  return "";
-}
 function resolveAudio(day,q){
-  if(q.audio) return q.audio;
-  if(q.audioRef){
+  let text = "";
+  if(q.audio) text = q.audio;
+  else if(q.audioRef){
     const src=day.questions.find(x=>x.id===q.audioRef);
-    return src?.audio || "";
+    text = src?.audio || "";
   }
-  return "";
+  return normalizeText(text);
+}
+
+function loadVoices(){
+  if(!("speechSynthesis" in window)) return;
+  availableVoices = speechSynthesis.getVoices() || [];
+  refreshVoiceLabels();
+}
+
+function voiceScore(voice, role){
+  const name = `${voice.name || ""} ${voice.voiceURI || ""}`;
+  const lang = (voice.lang || "").toLowerCase();
+  let score = 0;
+  if(lang.startsWith("en-us")) score += 35;
+  else if(lang.startsWith("en")) score += 20;
+  else return -1000;
+
+  if(/natural/i.test(name)) score += 120;
+  if(/online/i.test(name)) score += 80;
+  if(/microsoft/i.test(name)) score += 45;
+  if(voice.default) score += 8;
+
+  const female = /aria|jenny|sara|michelle|sonia|samantha|zira|ava|emma|ana|joanna/i;
+  const male = /guy|davis|tony|mark|david|ryan|christopher|andrew|brian/i;
+
+  if(role==="female" && female.test(name)) score += 28;
+  if(role==="female" && male.test(name)) score -= 10;
+  if(role==="male" && male.test(name)) score += 28;
+  if(role==="male" && female.test(name)) score -= 10;
+  return score;
+}
+
+function pickVoice(role="narrator"){
+  if(!availableVoices.length) loadVoices();
+  const targetRole = role==="female" ? "female" : role==="male" ? "male" : "narrator";
+  return [...availableVoices].sort((a,b)=>voiceScore(b,targetRole)-voiceScore(a,targetRole))[0] || null;
+}
+
+function voiceSummary(){
+  const female = pickVoice("female");
+  const male = pickVoice("male");
+  const narrator = pickVoice("narrator");
+  const names = [];
+  if(narrator) names.push(narrator.name);
+  if(female && female.name !== narrator?.name) names.push(female.name);
+  if(male && !names.includes(male.name)) names.push(male.name);
+  return names.length ? `語音：${names.join(" / ")}` : "將使用 Edge / 系統可用的英語語音";
+}
+
+function refreshVoiceLabels(){
+  document.querySelectorAll("[data-voice-status]").forEach(el=>{
+    el.textContent = voiceSummary();
+  });
 }
 
 function speak(text){
   if(!("speechSynthesis" in window)){
-    alert("此瀏覽器不支援語音播放。建議使用 Chrome / Edge / Safari。");
+    alert("此瀏覽器不支援語音播放。請使用 Edge。");
     return;
   }
+
   speechSynthesis.cancel();
-  const lines=text.split("\n").filter(Boolean);
+  const lines = normalizeText(text).split("\n").map(x=>x.trim()).filter(Boolean);
   let i=0;
+
   function next(){
     if(i>=lines.length) return;
-    const raw=lines[i++].replace(/^(Woman|Man):\s*/,"");
-    const u=new SpeechSynthesisUtterance(raw);
+    const line = lines[i++];
+    const roleMatch = line.match(/^(Woman|Man):\s*/i);
+    let role = "narrator";
+    if(roleMatch?.[1]?.toLowerCase()==="woman") role = "female";
+    if(roleMatch?.[1]?.toLowerCase()==="man") role = "male";
+
+    const raw = line.replace(/^(Woman|Man):\s*/i,"");
+    const u = new SpeechSynthesisUtterance(raw);
     u.lang="en-US";
-    u.rate=0.92;
+    u.rate=0.94;
+
+    const voice = pickVoice(role);
+    if(voice) u.voice=voice;
+
+    if(role==="female") u.pitch=1.03;
+    else if(role==="male") u.pitch=0.97;
+
     u.onend=next;
     speechSynthesis.speak(u);
   }
@@ -261,21 +389,26 @@ function showLesson(dayId){
   $("#goQuestions").onclick=()=>$("#questionsAnchor").scrollIntoView({behavior:"smooth"});
   if($("#openReview")) $("#openReview").onclick=showReview;
   attachQuestionHandlers(day);
+  refreshVoiceLabels();
 }
 
 function renderQuestion(day,q,i){
   const a=progress.answers[q.id];
-  const passage=resolvePassage(day,q);
+  // Passage is shown only on the first question in a set, like the real TOEIC layout.
+  const passage = q.passage ? normalizeText(q.passage) : "";
   const audio=resolveAudio(day,q);
   if(!a) questionStartTimes[q.id]=Date.now();
 
-  return `<div class="card question-card" id="${q.id}">
+  return `<div class="card question-card ${passage?'has-passage':''}" id="${q.id}">
     <div class="question-no">${q.part} · Q${i+1} · ${skillLabel(q.skill)}</div>
     ${audio ? `<div class="audio-box">
       <button class="btn primary audio-play" data-audio-id="${q.id}">▶ 播放音檔</button>
-      <span class="muted">先不要看逐字稿；作答後才顯示。</span>
+      <div class="audio-help">
+        <span>先聽後答，作答後才顯示逐字稿。</span>
+        <span class="voice-status" data-voice-status>${escapeHtml(voiceSummary())}</span>
+      </div>
     </div>` : ""}
-    ${passage ? `<div class="passage">${escapeHtml(passage)}</div>` : ""}
+    ${passage ? `<article class="passage">${formatPassage(passage)}</article>` : ""}
     <div class="prompt">${escapeHtml(q.prompt || "請聽音檔後作答。")}</div>
     <div class="options">
       ${q.options.map((o,idx)=>{
@@ -302,10 +435,6 @@ function renderQuestion(day,q,i){
       ${audio ? `<div class="script hidden" data-script="${q.id}" style="margin-top:8px"><strong>逐字稿：</strong><br>${escapeHtml(audio).replace(/\n/g,"<br>")}</div>`:""}
     </div>` : ""}
   </div>`;
-}
-
-function escapeHtml(s){
-  return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));
 }
 
 function attachQuestionHandlers(day){
@@ -360,7 +489,7 @@ function showReview(){
   $("#pageSubtitle").textContent="優先看「為什麼錯」，而不是只背正確答案。";
   const qs=allQuestions().filter(q=>progress.answers[q.id] && !progress.answers[q.id].correct);
   $("#reviewView").innerHTML = qs.length ? `
-    <div class="card">
+    <div class="card review-card">
       <table class="review-table">
         <thead><tr><th>Day</th><th>題型</th><th>技能</th><th>題目</th><th>你的答案</th><th>正確答案</th></tr></thead>
         <tbody>
@@ -423,6 +552,11 @@ $("#resetBtn").onclick=()=>{
     showDashboard();
   }
 };
+
+if("speechSynthesis" in window){
+  loadVoices();
+  speechSynthesis.onvoiceschanged = loadVoices;
+}
 
 renderNav();
 showDashboard();
