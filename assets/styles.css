@@ -56,18 +56,40 @@ h1{margin:0;font-size:28px}
 .lesson-head h2{margin:0}
 .lesson-actions{display:flex;gap:8px;flex-wrap:wrap}
 .question-card{margin:14px 0}
+.question-card.has-passage{padding-top:22px}
 .question-no{font-size:12px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:.05em}
-.prompt{font-size:18px;line-height:1.6;margin:10px 0 14px}
+.prompt{font-size:18px;line-height:1.6;margin:18px 0 14px;font-weight:600}
 .options{display:grid;gap:9px}
-.option{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);padding:12px;border-radius:12px;cursor:pointer;background:#fff}
+.option{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);padding:12px;border-radius:12px;cursor:pointer;background:#fff;line-height:1.55}
 .option:hover{border-color:#bdc8e5}
-.option input{margin-top:3px}
+.option input{margin-top:4px;flex:0 0 auto}
 .option.correct{border-color:#a8d8c7;background:#f1fbf7}
 .option.wrong{border-color:#edb4ba;background:#fff6f7}
 .explain{margin-top:12px;border-left:4px solid var(--accent);background:#f7f9ff;padding:12px 14px;border-radius:8px;line-height:1.65}
-.audio-box{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:12px;border-radius:12px;background:#f7f9fc;margin-bottom:12px}
+.audio-box{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:14px;border-radius:12px;background:#f7f9fc;margin:12px 0 16px}
+.audio-help{display:flex;flex-direction:column;gap:3px;color:var(--muted);font-size:13px}
+.voice-status{font-size:12px;color:#7d8798}
 .kicker{font-size:12px;color:var(--muted)}
-.passage{background:#f8fafc;border:1px solid var(--line);padding:16px;border-radius:14px;line-height:1.75;white-space:pre-line;margin:10px 0 16px}
+.passage{
+  background:#fff;
+  border:1px solid #dfe5ee;
+  padding:22px 24px;
+  border-radius:14px;
+  line-height:1.72;
+  margin:14px 0 20px;
+  font-family:"Segoe UI",Arial,sans-serif;
+  font-size:16.5px;
+  color:#1d2738;
+  letter-spacing:.002em;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.9);
+}
+.passage p{margin:0 0 1em}
+.passage p:last-child{margin-bottom:0}
+.passage-meta{display:grid;gap:7px;border-bottom:1px solid #e5e9f0;padding-bottom:16px;margin-bottom:18px}
+.passage-meta-row{display:grid;grid-template-columns:72px minmax(0,1fr);gap:12px;align-items:start}
+.passage-meta-label{font-weight:750;color:#667085}
+.passage-meta-value{font-weight:550;overflow-wrap:anywhere}
+.passage-title{font-weight:850;font-size:17px;letter-spacing:.035em;border-bottom:1px solid #e5e9f0;padding-bottom:13px;margin-bottom:18px}
 .vocab-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .vocab{border:1px solid var(--line);border-radius:12px;padding:13px}
 .vocab strong{font-size:17px}
@@ -77,10 +99,12 @@ h1{margin:0;font-size:28px}
 .score-bad{color:var(--bad)}
 .weak-list{display:grid;gap:8px}
 .weak-row{display:flex;justify-content:space-between;border-bottom:1px solid var(--line);padding:9px 0}
-.review-table{width:100%;border-collapse:collapse;font-size:14px}
+.review-card{overflow-x:auto}
+.review-table{width:100%;border-collapse:collapse;font-size:14px;min-width:760px}
 .review-table th,.review-table td{padding:10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
 .review-table th{color:var(--muted)}
 .notice{padding:13px 15px;border-radius:12px;background:#fff8e8;color:#745006;border:1px solid #f3deb0}
+
 @media(max-width:900px){
   .app-shell{grid-template-columns:1fr}
   .sidebar{position:static;height:auto}
@@ -89,4 +113,20 @@ h1{margin:0;font-size:28px}
   .main{padding:18px}
   .grid.stats,.day-cards,.vocab-list{grid-template-columns:1fr}
   .topbar,.lesson-head{flex-direction:column}
+}
+
+@media(max-width:600px){
+  .main{padding:14px}
+  .card{padding:16px;border-radius:16px}
+  .question-card{margin:12px 0}
+  .question-no{font-size:12px;line-height:1.4}
+  .prompt{font-size:18px;line-height:1.55;margin:16px 0 13px}
+  .passage{padding:18px 16px;font-size:16px;line-height:1.68;margin:12px 0 18px}
+  .passage-meta-row{grid-template-columns:62px minmax(0,1fr);gap:8px}
+  .passage-meta{padding-bottom:14px;margin-bottom:16px}
+  .passage-title{font-size:16px}
+  .option{padding:13px 12px}
+  .audio-box{align-items:flex-start}
+  .audio-box .btn{width:100%}
+  .review-table{font-size:13px}
 }
